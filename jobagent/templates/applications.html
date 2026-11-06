@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "_m.html" import badge, score, chip %}
+{% block title %}Applications · Job Agent{% endblock %}
+{% block content %}
+<div class="head"><h1>Applications</h1></div>
+
+<div class="chips">
+  {{ chip("/applications", "All", counts.values() | sum, not status) }}
+  {{ chip("/applications?status=heard", "Heard back", (counts.get('replied',0) + counts.get('interviewing',0) + counts.get('offer',0) + counts.get('rejected',0)), status == 'heard') }}
+  {{ chip("/applications?status=waiting", "Still waiting", (counts.get('applied',0) + counts.get('acknowledged',0) + counts.get('ghosted',0)), status == 'waiting') }}
+  {% for key in ['review','queued','ready','manual','failed','applied','acknowledged','replied','interviewing','offer','rejected','ghosted','withdrawn','dismissed'] %}
+    {% if counts.get(key) %}{{ chip("/applications?status=" ~ key, labels[key], counts[key], status == key) }}{% endif %}
+  {% endfor %}
+</div>
+
+<form class="search" method="get" action="/applications">
+  {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+  <input type="search" name="q" value="{{ q }}" placeholder="Search company or job title">
+  <button type="submit" class="ghost">Search</button>
+</form>
+
+<section class="card table-wrap">
+  <table>
+    <thead><tr><th>Job</th><th>Status</th><th>Applied</th><th>Last activity</th><th>Match</th></tr></thead>
+    <tbody>
+    {% for a in rows %}
+      <tr>
+        <td><a class="t" href="/applications/{{ a.id }}">{{ a.title }}</a><br><span class="muted small">{{ a.company }} · {{ a.source }}</span></td>
+        <td>{{ badge(a.status) }}</td>
+        <td class="small">{{ a.applied_at | localdate if a.applied_at else '-' }}<br><span class="muted">{{ a.applied_at | ago if a.applied_at else '' }}</span></td>
+        <td class="small">{{ a.last_event_at | ago }}</td>
+        <td>{{ score(a.score) if a.score else '-' }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="muted">No applications here yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<details class="card" style="margin-top:1rem">
+  <summary>Add an application I made myself</summary>
+  <p class="muted small">Track jobs you applied for outside this app (LinkedIn, a company site, an email). If Gmail is connected, replies from that company are matched automatically.</p>
+  <form method="post" action="/applications/manual">
+    <div class="row">
+      <div><label>Company</label><input type="text" name="company" required></div>
+      <div><label>Job title</label><input type="text" name="title" required></div>
+      <div><label>Link (optional)</label><input type="url" name="url"></div>
+      <div><label>Applied on</label><input type="date" name="applied_on" value="{{ today }}"></div>
+    </div>
+    <label>Notes</label><textarea name="notes" style="min-height:4rem"></textarea>
+    <p><button type="submit">Add</button></p>
+  </form>
+</details>
+{% endblock %}

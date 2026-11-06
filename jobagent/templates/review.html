@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "_m.html" import score %}
+{% block title %}Review · Job Agent{% endblock %}
+{% block content %}
+<div class="head">
+  <div>
+    <h1>Review</h1>
+    <p class="muted">
+      {% if cfg.apply.mode == 'off' %}Jobs that match your description. Open the posting, apply on the company's site, then press <b>I applied</b> so replies and interviews are tracked.
+      {% else %}Jobs that match your description but need your OK before anything is sent.{% endif %}
+      {% if cfg.apply.mode == 'auto_strong' %}Scores of {{ cfg.search.auto_apply_score }}+ skip this list and go straight to the apply queue.{% endif %}</p>
+  </div>
+  {% if rows and cfg.apply.mode != 'off' %}
+  <form method="post" action="/review/approve_all" onsubmit="return confirm('Approve all {{ rows|length }} jobs?')">
+    <button type="submit">Approve all ({{ rows|length }})</button>
+  </form>
+  {% endif %}
+</div>
+
+{% for j in rows %}
+<section class="card" style="margin-bottom:.8rem">
+  <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+    <div>
+      <h2 style="margin:0"><a href="/applications/{{ j.app_id }}">{{ j.title }}</a></h2>
+      <p style="margin:.1rem 0"><b>{{ j.company }}</b> <span class="muted">· {{ j.location or 'location not stated' }} · {{ j.source }} · posted {{ j.posted_at | localdate }}</span></p>
+      <p class="small muted">{{ j.reasons }}</p>
+      {% if j.apply_email %}<p class="small muted">Applies by email to {{ j.apply_email }}</p>{% endif %}
+    </div>
+    <div style="text-align:right">
+      <div class="small muted">Match</div>
+      <div style="font-size:1.6rem">{{ score(j.score) }}</div>
+    </div>
+  </div>
+  <details>
+    <summary class="small muted">Job description</summary>
+    <p class="small">{{ (j.description or '')[:1800] }}{% if (j.description or '')|length > 1800 %}…{% endif %}</p>
+  </details>
+  <div class="actions" style="margin-top:.6rem">
+    {% if j.url %}<a class="btn" href="{{ j.url }}" target="_blank" rel="noopener noreferrer">Open posting</a>{% endif %}
+    <form method="post" action="/applications/{{ j.app_id }}/applied" class="inline"><input type="hidden" name="next" value="/review"><button type="submit" class="{{ 'ghost' if j.url }}">I applied</button></form>
+    {% if cfg.apply.mode != 'off' %}<form method="post" action="/review/{{ j.app_id }}/approve" class="inline"><button type="submit" class="ghost">Approve for auto-apply</button></form>{% endif %}
+    <form method="post" action="/review/{{ j.app_id }}/dismiss" class="inline"><button type="submit" class="ghost">Dismiss</button></form>
+  </div>
+</section>
+{% else %}
+<section class="card"><p class="muted">Nothing to review. New matches appear here after each search.</p></section>
+{% endfor %}
+{% endblock %}

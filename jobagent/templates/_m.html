@@ -1,0 +1,7 @@
+{% macro badge(status) %}<span class="badge s-{{ status }}">{{ labels.get(status, status) }}</span>{% endmacro %}
+
+{% macro score(n) %}<span class="score {{ 'hi' if n >= 75 else ('mid' if n >= 45 else 'lo') }}">{{ n }}</span>{% endmacro %}
+
+{% macro stat(n, label) %}<div class="stat"><div class="n">{{ n }}</div><div class="l">{{ label }}</div></div>{% endmacro %}
+
+{% macro chip(href, label, count, on) %}<a class="chip {{ 'on' if on }}" href="{{ href }}">{{ label }}{% if count is not none %}<span class="c">{{ count }}</span>{% endif %}</a>{% endmacro %}

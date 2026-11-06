@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Settings · Job Agent{% endblock %}
+{% block content %}
+<div class="head"><h1>Settings</h1></div>
+
+{% if ready_problem %}<div class="note">{{ ready_problem }}</div>{% endif %}
+
+<div class="grid cols-2">
+  <section class="card">
+    <h2>Your CV</h2>
+    <p class="small muted">Attached to every application. Stored only on this computer.</p>
+    <p>{% if resume %}Current file: <b>{{ resume }}</b>{% else %}<span class="muted">No CV uploaded yet.</span>{% endif %}</p>
+    <form method="post" action="/settings/resume" enctype="multipart/form-data">
+      <input type="file" name="resume" accept=".pdf,.doc,.docx" required>
+      <p><button type="submit">Upload CV</button></p>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Gmail (reply tracking)</h2>
+    {% if gmail_connected %}
+      <p>Connected{% if gmail_email %} as <b>{{ gmail_email }}</b>{% endif %}. {% if gmail_can_send %}Can also send applications by email.{% else %}Read-only access.{% endif %}</p>
+      <p class="small muted">{% if last_inbox %}Inbox last checked {{ last_inbox | ago }}.{% else %}Not checked yet.{% endif %} Tracking {{ tracking }} application{{ '' if tracking == 1 else 's' }}. The app reads sender, subject and a short preview of messages, only to match replies to jobs you applied for.</p>
+      {% if inbox_error %}<div class="note"><b>Last check failed:</b> {{ inbox_error }}</div>{% endif %}
+      {% if not tracking %}<div class="note" style="background:var(--info-soft);color:var(--info)">Nothing to track yet: press <b>I applied</b> on a job in Review after you apply.</div>{% endif %}
+      <form method="post" action="/run/inbox" class="actions">
+        <input type="hidden" name="next" value="/settings">
+        <button type="submit">Check now</button>
+        <button type="submit" name="full" value="1" class="ghost">Rescan last {{ cfg.gmail.poll_lookback_days }} days</button>
+      </form>
+      <form method="post" action="/gmail/disconnect" onsubmit="return confirm('Disconnect Gmail?')" style="margin-top:.5rem"><button class="link" type="submit">Disconnect</button></form>
+    {% elif gmail_configured %}
+      <p class="muted">Not connected yet.</p>
+      <form method="post" action="/gmail/connect"><button type="submit">Connect Gmail</button></form>
+    {% else %}
+      <p class="muted">One-time setup needed: the app has no usable Google OAuth client file.</p>
+      <div class="note">{{ gmail_problem }}</div>
+    {% endif %}
+    <p class="small muted">Data folder in use: <code>{{ data_dir }}</code></p>
+  </section>
+</div>
+
+<section class="card" style="margin-top:1rem">
+  <h2>Search description and behaviour</h2>
+  <p class="small muted">Job titles, skills, locations, how strict to be, how many applications per day, and your profile details used to fill forms. Saved changes re-score jobs already found.</p>
+  <form method="post" action="/settings/config">
+    <textarea class="code" name="config" spellcheck="false">{{ config_text }}</textarea>
+    <p class="actions"><button type="submit">Save</button><span class="muted small">Port or host changes need a restart.</span></p>
+  </form>
+</section>
+
+<section class="card" style="margin-top:1rem">
+  <h2>Cover letter template</h2>
+  <p class="small muted">Placeholders: <code>{company}</code> <code>{title}</code> <code>{skills_sentence}</code> <code>{skills}</code> <code>{name}</code> <code>{email}</code> <code>{phone}</code> <code>{location}</code> <code>{linkedin}</code> <code>{github}</code>. Each application gets its own copy that you can edit before approving.</p>
+  <form method="post" action="/settings/cover">
+    <textarea name="cover" style="min-height:12rem">{{ cover_template }}</textarea>
+    <p><button type="submit">Save template</button></p>
+  </form>
+</section>
+
+<section class="card" style="margin-top:1rem">
+  <h2>Activity log</h2>
+  <p class="small muted">Last search: {{ last_search | ago }}.</p>
+  <ul class="list-plain">
+    {% for l in logs %}<li><span class="small {{ 'error' if l.level == 'error' }}">{{ l.message }}</span><span class="muted small">{{ l.at | localtime }}</span></li>
+    {% else %}<li class="muted">Nothing logged yet.</li>{% endfor %}
+  </ul>
+</section>
+{% endblock %}

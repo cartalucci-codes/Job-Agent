@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in · Job Agent</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="login card">
+  <h1>Job Agent</h1>
+  <p class="muted">Paste your access token. It was printed in the terminal when the app started, and is saved in <code>data/.access_token</code>.</p>
+  <form method="post" action="/login">
+    <label for="token">Access token</label>
+    <input id="token" name="token" type="password" autofocus autocomplete="current-password" required>
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    <p><button type="submit">Sign in</button></p>
+  </form>
+</div>
+</body>
+</html>

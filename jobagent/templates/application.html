@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% from "_m.html" import badge, score %}
+{% block title %}{{ a.company }} · Job Agent{% endblock %}
+{% block content %}
+<p class="small"><a href="/applications">← All applications</a></p>
+<div class="head">
+  <div>
+    <h1>{{ a.title }}</h1>
+    <p><b>{{ a.company }}</b> <span class="muted">· {{ a.location or 'location not stated' }} · via {{ a.source }}</span> {{ badge(a.status) }}</p>
+    <p class="muted small">
+      {% if a.applied_at %}Applied {{ a.applied_at | localtime }} ({{ a.applied_at | ago }}){% else %}Not applied yet{% endif %}
+      {% if a.first_response_at %} · first reply {{ a.first_response_at | localtime }}{% endif %}
+      {% if a.score %} · match {{ score(a.score) }}{% endif %}
+    </p>
+  </div>
+  <div class="actions">
+    {% if a.status in ('review', 'queued', 'ready', 'manual', 'failed') %}
+      <form method="post" action="/applications/{{ a.id }}/applied" class="inline"><button type="submit">I applied</button></form>
+    {% endif %}
+    {% if a.status == 'review' %}
+      {% if mode != 'off' %}<form method="post" action="/review/{{ a.id }}/approve" class="inline"><button type="submit" class="ghost">Approve for auto-apply</button></form>{% endif %}
+      <form method="post" action="/review/{{ a.id }}/dismiss" class="inline"><button type="submit" class="ghost">Dismiss</button></form>
+    {% elif a.status == 'ready' %}
+      <form method="post" action="/applications/{{ a.id }}/submit" class="inline" onsubmit="return confirm('Send this application now?')"><button type="submit">Submit application</button></form>
+    {% elif a.status in ('manual', 'failed') and target != 'manual' %}
+      <form method="post" action="/applications/{{ a.id }}/prepare" class="inline"><button type="submit" class="ghost">Try again</button></form>
+    {% endif %}
+    {% if a.url %}<a class="btn ghost" href="{{ a.url }}" target="_blank" rel="noopener noreferrer">Open posting</a>{% endif %}
+  </div>
+</div>
+
+{% if a.error and a.status in ('manual', 'failed') %}<div class="note">{{ a.error }}</div>{% endif %}
+{% if a.status == 'ready' %}<div class="note" style="background:var(--info-soft);color:var(--info)">The form was filled in but not sent. Check the screenshot, then submit.</div>{% endif %}
+
+<div class="grid cols-2" style="grid-template-columns: 3fr 2fr; align-items:start">
+  <section class="card">
+    <h2>Timeline</h2>
+    <ul class="timeline">
+      {% for e in events %}
+      <li class="k-{{ e.kind }}">
+        <b>{{ event_labels.get(e.kind, e.kind) }}</b> <span class="when">· {{ e.at | localtime }}</span>
+        {% if e.summary %}<div class="small">{{ e.summary }}</div>{% endif %}
+        {% if e.detail %}
+        <details><summary class="small muted">Details</summary><pre class="mail">{{ e.detail }}</pre>
+          {% if e.gmail_id %}<form method="post" action="/events/{{ e.id }}/delete" class="inline" onsubmit="return confirm('Remove this email from the timeline? Use this if it belongs to a different job.')"><button class="link small" type="submit">Not about this job: remove</button></form>{% endif %}
+        </details>
+        {% endif %}
+      </li>
+      {% else %}<li class="muted">No events yet.</li>{% endfor %}
+    </ul>
+  </section>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Status</h2>
+      <form method="post" action="/applications/{{ a.id }}/status" class="actions">
+        <select name="status" style="flex:1">
+          {% for key, label in labels.items() %}<option value="{{ key }}" {{ 'selected' if key == a.status }}>{{ label }}</option>{% endfor %}
+        </select>
+        <button type="submit" class="ghost">Set</button>
+      </form>
+      <p class="muted small">Use this to correct what the app worked out, for example after a phone call.</p>
+    </section>
+
+    <section class="card">
+      <h2>Notes</h2>
+      <form method="post" action="/applications/{{ a.id }}/notes">
+        <textarea name="notes" style="min-height:6rem">{{ a.notes }}</textarea>
+        <p><button type="submit" class="ghost">Save notes</button></p>
+      </form>
+    </section>
+  </div>
+</div>
+
+<section class="card" style="margin-top:1rem">
+  <h2>Interviews</h2>
+  {% if interviews %}
+  <table>
+    <thead><tr><th>When</th><th>Type</th><th>Who / where</th><th>Outcome</th></tr></thead>
+    <tbody>
+    {% for i in interviews %}
+      <tr>
+        <td class="small">{{ i.scheduled_at | localtime if i.scheduled_at else 'Time to be confirmed' }}</td>
+        <td>{{ i.kind }}</td>
+        <td class="small">{{ i.interviewer }}{% if i.link %}<br><a href="{{ i.link }}" target="_blank" rel="noopener noreferrer">Meeting link</a>{% endif %}{% if i.notes %}<br><span class="muted">{{ i.notes }}</span>{% endif %}</td>
+        <td>
+          <form method="post" action="/interviews/{{ i.id }}/update?next=/applications/{{ a.id }}" class="actions">
+            <select name="outcome">{% for o in ['pending','passed','failed','cancelled'] %}<option {{ 'selected' if o == i.outcome }}>{{ o }}</option>{% endfor %}</select>
+            <button class="ghost small" type="submit">Save</button>
+          </form>
+          <form method="post" action="/interviews/{{ i.id }}/delete?next=/applications/{{ a.id }}" class="inline"><button class="link small" type="submit">Delete</button></form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="muted">No interviews recorded.</p>{% endif %}
+  <details style="margin-top:.8rem">
+    <summary>Add an interview</summary>
+    <form method="post" action="/applications/{{ a.id }}/interviews">
+      <div class="row">
+        <div><label>Date and time</label><input type="datetime-local" name="scheduled_at"></div>
+        <div><label>Type</label><input type="text" name="kind" value="Interview" placeholder="Phone screen, technical, final…"></div>
+        <div><label>Interviewer</label><input type="text" name="interviewer"></div>
+        <div><label>Meeting link</label><input type="url" name="link"></div>
+      </div>
+      <label>Notes / prep</label><textarea name="notes" style="min-height:4rem"></textarea>
+      <p><button type="submit">Add interview</button></p>
+    </form>
+  </details>
+</section>
+
+{% if a.screenshot %}
+<section class="card" style="margin-top:1rem">
+  <h2>Form preview</h2>
+  <a href="/screenshots/{{ a.screenshot }}" target="_blank"><img class="shot" src="/screenshots/{{ a.screenshot }}" alt="Screenshot of the filled-in application form"></a>
+</section>
+{% endif %}
+
+{% if a.status in ('review', 'queued', 'ready', 'manual', 'failed') or a.cover_letter %}
+<section class="card" style="margin-top:1rem">
+  <h2>Cover letter</h2>
+  <form method="post" action="/applications/{{ a.id }}/cover">
+    <textarea name="cover_letter" style="min-height:11rem">{{ a.cover_letter }}</textarea>
+    <p><button type="submit" class="ghost">Save cover letter</button></p>
+  </form>
+</section>
+{% endif %}
+
+<section class="card" style="margin-top:1rem">
+  <details>
+    <summary>Job details</summary>
+    <p class="small muted">{{ a.reasons }}</p>
+    <p class="small">{{ (a.description or 'No description stored.')[:4000] }}</p>
+  </details>
+</section>
+
+<form method="post" action="/applications/{{ a.id }}/delete" onsubmit="return confirm('Delete this application and its history?')" style="margin-top:1rem">
+  <button type="submit" class="danger small">Delete application</button>
+</form>
+{% endblock %}

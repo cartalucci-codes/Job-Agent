@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Interviews · Job Agent{% endblock %}
+{% block content %}
+<div class="head"><h1>Interviews</h1></div>
+
+{% if invites %}
+<section class="card" style="margin-bottom:1rem">
+  <h2>Invitations to follow up</h2>
+  <p class="muted small">These companies replied about an interview but no details are recorded yet.</p>
+  <ul class="list-plain">
+    {% for a in invites %}
+    <li><span><b>{{ a.company }}</b> <span class="muted">· {{ a.title }}</span></span><a class="btn small" href="/applications/{{ a.id }}">Add details</a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% macro table(rows) %}
+<table>
+  <thead><tr><th>When</th><th>Company</th><th>Type</th><th>Details</th><th>Outcome</th></tr></thead>
+  <tbody>
+  {% for i in rows %}
+    <tr>
+      <td class="small">{{ i.scheduled_at | localtime if i.scheduled_at else 'To be confirmed' }}<br><span class="muted">{{ i.scheduled_at | ago if i.scheduled_at else '' }}</span></td>
+      <td><a href="/applications/{{ i.app_id }}"><b>{{ i.company }}</b></a><br><span class="muted small">{{ i.title }}</span></td>
+      <td>{{ i.kind }}</td>
+      <td class="small">{{ i.interviewer }}{% if i.link %}<br><a href="{{ i.link }}" target="_blank" rel="noopener noreferrer">Meeting link</a>{% endif %}{% if i.notes %}<br><span class="muted">{{ i.notes }}</span>{% endif %}</td>
+      <td>
+        <form method="post" action="/interviews/{{ i.id }}/update?next=/interviews" class="actions">
+          <input type="hidden" name="notes" value="{{ i.notes }}">
+          <select name="outcome">{% for o in ['pending','passed','failed','cancelled'] %}<option {{ 'selected' if o == i.outcome }}>{{ o }}</option>{% endfor %}</select>
+          <button class="ghost small" type="submit">Save</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="muted">None.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endmacro %}
+
+<section class="card table-wrap" style="margin-bottom:1rem">
+  <h2>Upcoming</h2>
+  {{ table(upcoming) }}
+</section>
+<section class="card table-wrap">
+  <h2>Past</h2>
+  {{ table(past) }}
+</section>
+{% endblock %}

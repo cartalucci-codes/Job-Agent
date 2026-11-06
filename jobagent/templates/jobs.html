@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "_m.html" import badge, score, chip %}
+{% block title %}Jobs · Job Agent{% endblock %}
+{% block content %}
+<div class="head">
+  <div>
+    <h1>Jobs found</h1>
+    <p class="muted">Everything the searches turned up, including jobs that scored below {{ min_score }} and were never queued. Use this to see why a job was skipped.</p>
+  </div>
+</div>
+
+<div class="chips">
+  {{ chip("/jobs", "All", counts.values() | sum, not status) }}
+  {% for key in ['matched', 'new', 'skipped', 'duplicate'] %}
+    {% if counts.get(key) %}{{ chip("/jobs?status=" ~ key, {'matched': 'Matched', 'new': 'New', 'skipped': 'Below threshold', 'duplicate': 'Duplicates'}[key], counts[key], status == key) }}{% endif %}
+  {% endfor %}
+</div>
+<form class="search" method="get" action="/jobs">
+  {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+  <input type="search" name="q" value="{{ q }}" placeholder="Search company or job title">
+  <button type="submit" class="ghost">Search</button>
+</form>
+
+<section class="card table-wrap">
+  <table>
+    <thead><tr><th>Job</th><th>Score</th><th>Why</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for j in rows %}
+      <tr>
+        <td><span class="t">{{ j.title }}</span><br><span class="muted small">{{ j.company }} · {{ j.location or '-' }} · {{ j.source }}</span></td>
+        <td>{{ score(j.score) }}</td>
+        <td class="small muted">{{ j.reasons }}</td>
+        <td>{{ badge(j.status) }}</td>
+        <td>
+          {% if j.status in ('skipped', 'new') %}
+          <form method="post" action="/jobs/{{ j.id }}/queue" class="inline"><button class="ghost small" type="submit">Queue anyway</button></form>
+          {% endif %}
+          {% if j.url %}<a class="small" href="{{ j.url }}" target="_blank" rel="noopener noreferrer">Open</a>{% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="muted">No jobs yet. Run a search from the dashboard.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

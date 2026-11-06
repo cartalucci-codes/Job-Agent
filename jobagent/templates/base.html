@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Job Agent{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/">Job Agent</a>
+  <nav>
+    {% for href, label in nav %}
+      <a href="{{ href }}" class="{% if (href == '/' and request.url.path == '/') or (href != '/' and request.url.path.startswith(href)) %}on{% endif %}">{{ label }}{% if label == 'Review' and review_count %}<span class="pill">{{ review_count }}</span>{% endif %}</a>
+    {% endfor %}
+  </nav>
+  <form method="post" action="/logout" class="inline"><button class="link" type="submit">Sign out</button></form>
+</header>
+<main>
+  {% if flash %}<div class="flash">{{ flash }}</div>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

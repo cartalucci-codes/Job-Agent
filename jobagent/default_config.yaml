@@ -1,0 +1,111 @@
+# Job Agent configuration.
+# Edit this in the app (Settings page) or directly in data/config.yaml.
+# Anything you leave out falls back to these defaults.
+
+timezone: Africa/Johannesburg
+
+# Details used to fill application forms and write cover letters.
+profile:
+  first_name: ""
+  last_name: ""
+  email: ""
+  phone: ""
+  location: "Cape Town, South Africa"
+  linkedin: ""
+  github: ""
+  website: ""
+  current_company: ""
+
+# What a "good" job looks like. Each job gets a 0-100 score:
+#   title match 40 + skills 30 + nice-to-have 15 + location 15
+search:
+  titles:                # job titles you want (substring / word overlap match)
+    - software engineer
+    - software developer
+    - junior developer
+    - graduate developer
+    - intern
+  skills:                # a job must mention at least one of these
+    - python
+    - c#
+    - .net
+    - sql
+    - javascript
+  nice_to_have:          # each one found adds to the score
+    - azure
+    - fastapi
+    - react
+    - git
+  exclude_title:         # drop jobs whose TITLE contains any of these
+    - senior
+    - lead
+    - principal
+    - staff
+    - director
+    - head of
+    - manager
+    - architect
+  exclude_description: []  # drop jobs whose description contains any of these
+  locations:             # a job location containing any of these counts as a match
+    - Cape Town
+    - South Africa
+  remote_ok: true        # remote jobs count as a location match...
+  remote_regions:        # ...unless they are limited to a region, in which case it must be one of these
+    - worldwide
+    - anywhere
+    - global
+    - africa
+    - emea
+  min_score: 45          # below this the job is kept for reference but never queued
+  auto_apply_score: 75   # at or above this, applying is automatic (auto_strong mode)
+  max_age_days: 30       # ignore postings older than this
+
+# Where to look. Only official public job APIs are used, no scraping of
+# LinkedIn / Indeed (they forbid automation and ban accounts that use it).
+sources:
+  # General job boards (no key needed)
+  remotive: true         # remote jobs
+  arbeitnow: true        # mostly Europe
+  himalayas: true        # remote jobs
+  remoteok: true         # remote jobs
+  weworkremotely: true   # remote jobs
+  # Company career pages: add the company's name as it appears in its job-page URL.
+  #   boards.greenhouse.io/stripe  -> greenhouse: [stripe]
+  #   jobs.lever.co/netlify        -> lever: [netlify]
+  #   jobs.ashbyhq.com/linear      -> ashby: [linear]
+  #   apply.workable.com/canonical -> workable: [canonical]
+  #   jobs.smartrecruiters.com/Visa -> smartrecruiters: [Visa]
+  greenhouse: []
+  lever: []
+  ashby: []
+  workable: []
+  smartrecruiters: []
+  adzuna:                # free API key from developer.adzuna.com
+    enabled: false
+    app_id: ""
+    app_key: ""
+    country: za          # za, gb, us, ...
+
+apply:
+  mode: "off"            # off = you apply yourself (jobs are found and tracked) | approve_all | auto_strong
+  dry_run: true          # true = fill the form + screenshot, but wait for your click to submit
+  daily_limit: 10        # max real submissions per day
+  max_per_company: 2     # max applications to one company in total
+  delay_seconds: 20      # pause between applications
+  headless: true         # false = watch the browser fill forms
+  accept_privacy_checkboxes: false   # tick "I agree to the privacy policy" boxes for you
+
+gmail:
+  allow_send: false      # true = may send applications by email (asks for the send permission)
+  poll_lookback_days: 45
+
+tracking:
+  ghosted_after_days: 14 # no human reply after this long => "No reply"
+
+schedule:
+  search_every_minutes: 180
+  inbox_every_minutes: 20
+
+server:
+  host: 127.0.0.1        # keep this as-is: only your own computer can reach the app
+  port: 8787

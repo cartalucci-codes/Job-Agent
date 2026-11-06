@@ -1,0 +1,9 @@
+starlette>=0.40
+uvicorn>=0.30
+jinja2>=3.1
+python-multipart>=0.0.9
+requests>=2.31
+beautifulsoup4>=4.12
+pyyaml>=6.0
+cryptography>=42
+playwright>=1.44        # only needed for form auto-filling; then run: playwright install chromium

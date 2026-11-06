@@ -1,0 +1,6 @@
+# Everything private lives here: database, resume, tokens, Gmail credentials.
+data/
+data-demo/
+__pycache__/
+*.pyc
+.venv/

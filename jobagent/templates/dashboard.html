@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% from "_m.html" import badge, stat %}
+{% block title %}Dashboard · Job Agent{% endblock %}
+{% block content %}
+<div class="head">
+  <div>
+    <h1>Dashboard</h1>
+    <p class="mode">
+      Apply mode: <b>{{ {'auto_strong': 'auto-apply to strong matches', 'approve_all': 'approve every job first', 'off': 'off (tracking only)'}[cfg.apply.mode] }}</b>
+      · {% if cfg.apply.dry_run %}<b>Dry run on</b>: forms are filled in and waiting for your click{% else %}<b>Live</b>: applications are submitted automatically{% endif %}
+      · Last search: {{ last_search | ago }}
+      · Inbox: {% if not gmail_connected %}<a href="/settings">Gmail not connected</a>{% elif last_inbox %}checked {{ last_inbox | ago }}, tracking {{ tracking }} application{{ '' if tracking == 1 else 's' }}{% else %}connected, not checked yet{% endif %}
+    </p>
+  </div>
+  <div class="actions">
+    <form method="post" action="/run/search" class="inline"><button type="submit">Search for jobs now</button></form>
+    <form method="post" action="/run/inbox" class="inline"><button type="submit" class="ghost">Check inbox</button></form>
+  </div>
+</div>
+
+{% if inbox_error %}<div class="note"><b>Gmail problem:</b> {{ inbox_error }} <a href="/settings">Open Settings</a></div>{% endif %}
+{% if gmail_connected and not tracking and not inbox_error %}<div class="note" style="background:var(--info-soft);color:var(--info)">Gmail is connected, but no applications are being tracked yet. After you apply to a job, press <b>I applied</b> in Review so its replies can be matched.</div>{% endif %}
+
+<div class="stats">
+  {{ stat(s.sent, "Applications sent") }}
+  {{ stat((s.response_rate ~ "%") if s.response_rate is not none else "-", "Heard back (" ~ s.responded ~ ")") }}
+  {{ stat(s.interviewed, "Interviews") }}
+  {{ stat(s.offers, "Offers") }}
+  {{ stat(s.silent, "No reply") }}
+  {{ stat((s.avg_days_to_reply ~ " d") if s.avg_days_to_reply is not none else "-", "Avg. time to reply") }}
+</div>
+
+<div class="grid cols-2">
+  <section class="card attention">
+    <h2>Needs you</h2>
+    {% for item in attention %}
+      <a href="{{ item.href }}"><span class="dot {{ item.tone if item.tone != 'go' else '' }}"></span>{{ item.text }}</a>
+    {% else %}
+      <p class="muted">Nothing waiting on you.</p>
+    {% endfor %}
+  </section>
+
+  <section class="card">
+    <h2>Upcoming interviews</h2>
+    {% if upcoming %}
+    <ul class="list-plain">
+      {% for i in upcoming %}
+      <li>
+        <span><a href="/applications/{{ i.app_id }}"><b>{{ i.company }}</b></a> <span class="muted">· {{ i.kind }}</span><br><span class="muted small">{{ i.title }}{% if i.interviewer %} · {{ i.interviewer }}{% endif %}</span></span>
+        <span class="small">{{ i.scheduled_at | localtime }}<br><span class="muted">{{ i.scheduled_at | ago }}</span></span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted">No interviews scheduled.</p>{% endif %}
+  </section>
+</div>
+
+<div class="grid cols-2" style="margin-top:1rem">
+  <section class="card">
+    <h2>Heard back</h2>
+    {% if heard %}
+    <ul class="list-plain">
+      {% for a in heard %}
+      <li><span><a href="/applications/{{ a.id }}"><b>{{ a.company }}</b></a><br><span class="muted small">{{ a.title }} · replied {{ a.first_response_at | ago }}</span></span>{{ badge(a.status) }}</li>
+      {% endfor %}
+    </ul>
+    <p class="small"><a href="/applications?status=heard">See all</a></p>
+    {% else %}<p class="muted">No replies yet.</p>{% endif %}
+  </section>
+  <section class="card">
+    <h2>Still waiting</h2>
+    {% if waiting %}
+    <ul class="list-plain">
+      {% for a in waiting %}
+      <li><span><a href="/applications/{{ a.id }}"><b>{{ a.company }}</b></a><br><span class="muted small">{{ a.title }} · applied {{ a.applied_at | ago }}</span></span>{{ badge(a.status) }}</li>
+      {% endfor %}
+    </ul>
+    <p class="small"><a href="/applications?status=waiting">See all</a></p>
+    {% else %}<p class="muted">Nothing outstanding.</p>{% endif %}
+  </section>
+</div>
+
+<div class="grid cols-2" style="margin-top:1rem">
+  <section class="card funnel">
+    <h2>Funnel</h2>
+    {% set top = s.sent or 1 %}
+    {% for label, n in [("Applied", s.sent), ("Heard back", s.responded), ("Interview", s.interviewed), ("Offer", s.offers)] %}
+    <div class="bar"><span>{{ label }}</span><span class="track"><span class="fill" style="display:block;width:{{ (100 * n / top) | round | int }}%"></span></span><b>{{ n }}</b></div>
+    {% endfor %}
+    <p class="muted small">Rejected: {{ s.rejected }} · Withdrawn: {{ s.by_status.get('withdrawn', 0) }}</p>
+    <h3>Applications per week</h3>
+    <div class="weeks">
+      {% for w in weeks %}<div class="w"><span>{{ w.n }}</span><span class="col" style="height:{{ w.pct }}%"></span><span>{{ w.label }}</span></div>{% endfor %}
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Recent activity</h2>
+    {% if recent %}
+    <ul class="list-plain">
+      {% for e in recent %}
+      <li>
+        <span><a href="/applications/{{ e.app_id }}"><b>{{ e.company }}</b></a> <span class="muted">· {{ event_labels.get(e.kind, e.kind) }}</span><br><span class="muted small">{{ e.summary }}</span></span>
+        <span class="muted small">{{ e.at | ago }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted">Activity will show up here.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}
