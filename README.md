@@ -37,6 +37,16 @@ A wrong name is logged under Settings → Activity log and doesn't stop the othe
 
 **Remote jobs and your region.** A remote job counts as a location match only if it is open to your region: "Worldwide", "Anywhere", "Africa", "EMEA" and so on (`search.remote_regions`). A "Remote, USA only" job does not get the location points, so it ranks lower.
 
+## Setup
+1. Clone the repo and create a virtual environment:
+   python -m venv .venv
+   .venv\Scripts\activate
+   pip install -r requirements.txt
+2. Create a `data/` folder and copy `config.example.yaml` to `data/config.yaml`
+3. Fill in your own details and credentials
+4. Add your own resume as `data/resume.docx`
+5. Create your own Gmail OAuth client (see Google Cloud Console) and save it as `data/gmail_client.json`
+
 ## Setup on Windows (PowerShell)
 
 Needs Python 3.10+. Run each command on its own line, inside the project folder:
